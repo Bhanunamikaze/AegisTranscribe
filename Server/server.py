@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
 """
-SPEECH-TO-TEXT SERVER 
+AegisTranscribe Server — Real-time speech-to-text
+
+Key behavior: Interim text is completely deleted before final text is inserted.
+No styling tricks — delete and replace text properly.
+
 Compatible with deepgram-sdk 4.1.0+
 """
 
@@ -214,7 +218,7 @@ class TranscriptionGUI:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Speech-to-Text Server")
+        self.root.title("AegisTranscribe Server")
         self.root.geometry("1200x800")
         self.root.configure(bg='#2C3E50')
         # Ensure window can be resized by the user
@@ -674,7 +678,7 @@ def run_server_async(gui: TranscriptionGUI):
 
 def main():
     print("=" * 80)
-    print("FIXED SPEECH-TO-TEXT SERVER")
+    print("AegisTranscribe Server")
     print("=" * 80)
 
     if not DEEPGRAM_AVAILABLE:
