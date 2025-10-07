@@ -106,7 +106,3 @@ Outputs are written to the `dist/` folder. Keep a `.env` with your variables nex
 - No microphone: ensure PyAudio is installed and the mic is selected in the client GUI. On Linux/macOS install system PortAudio as noted above.
 - Deepgram errors: confirm `STT_API_KEY` and network connectivity from the server host.
 - Packaging issues: ensure PyInstaller is installed and run the provided build scripts from the corresponding `Client/` or `Server/` folder.
-
-
-## License
-Add your chosen license for this repository (e.g., MIT). If not specified, clarify usage terms before distribution.
