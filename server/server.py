@@ -71,6 +71,7 @@ def load_dotenv(dotenv_path: str | None = None, override: bool = False) -> bool:
 
 import tkinter as tk
 from tkinter import scrolledtext
+from tkinter import ttk
 import threading
 
 def _load_embedded_env() -> bool:
@@ -213,9 +214,16 @@ class TranscriptionGUI:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Speech-to-Text Server - FIXED")
+        self.root.title("Speech-to-Text Server")
         self.root.geometry("1200x800")
         self.root.configure(bg='#2C3E50')
+        # Ensure window can be resized by the user
+        self.root.resizable(True, True)
+        try:
+            # Optional: provide a visible resize grip without affecting layout
+            ttk.Sizegrip(self.root).place(relx=1.0, rely=1.0, anchor='se')
+        except Exception:
+            pass
 
         self.transcript_processor = TranscriptProcessor()
         self._interim_positions = {}  # Track interim text positions
@@ -223,42 +231,44 @@ class TranscriptionGUI:
         self._setup_gui()
 
     def _setup_gui(self):
-        """Setup GUI"""
-        # Header
-        header_frame = tk.Frame(self.root, bg='#27AE60', height=80)
-        header_frame.pack(fill='x')
-        header_frame.pack_propagate(False)
+        """Setup GUI: footer status + scroll for small screens"""
+        # Root expands
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
 
-        title_label = tk.Label(
-            header_frame,
-            text="FIXED: Speech-to-Text Server (No Duplication)",
-            font=('Arial', 20, 'bold'),
-            bg='#27AE60',
-            fg='white'
-        )
-        title_label.pack(pady=20)
+        # Scrollable container (helps on small screens)
+        container = tk.Frame(self.root, bg='#2C3E50')
+        container.grid(row=0, column=0, sticky='nsew')
 
-        # Status
-        status_frame = tk.Frame(self.root, bg='#2ECC71', height=50)
-        status_frame.pack(fill='x')
-        status_frame.pack_propagate(False)
+        canvas = tk.Canvas(container, bg='#2C3E50', highlightthickness=0)
+        v_scroll = tk.Scrollbar(container, orient='vertical', command=canvas.yview)
+        canvas.configure(yscrollcommand=v_scroll.set)
+        canvas.grid(row=0, column=0, sticky='nsew')
+        v_scroll.grid(row=0, column=1, sticky='ns')
 
-        self.status_label = tk.Label(
-            status_frame,
-            text="FIXED - Interim text is properly deleted | Clients: 0",
-            font=('Arial', 12, 'bold'),
-            bg='#2ECC71',
-            fg='white'
-        )
-        self.status_label.pack(pady=10)
+        container.rowconfigure(0, weight=1)
+        container.columnconfigure(0, weight=1)
 
-        # Content
-        content_frame = tk.Frame(self.root, bg='#2C3E50')
-        content_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        # Inner frame that holds all visible content
+        content_wrapper = tk.Frame(canvas, bg='#2C3E50')
+        content_window = canvas.create_window((0, 0), window=content_wrapper, anchor='nw')
 
-        # Transcription display
+        def _on_content_resize(event):
+            # Update scrollregion to encompass new size
+            canvas.configure(scrollregion=canvas.bbox('all'))
+            # Make inner frame match canvas width
+            canvas.itemconfig(content_window, width=canvas.winfo_width())
+
+        content_wrapper.bind('<Configure>', _on_content_resize)
+        canvas.bind('<Configure>', _on_content_resize)
+
+        # Grid layout inside content wrapper
+        content_wrapper.grid_columnconfigure(0, weight=1)
+        content_wrapper.grid_rowconfigure(0, weight=1)
+
+        # Main transcription area
         self.transcription_text = scrolledtext.ScrolledText(
-            content_frame,
+            content_wrapper,
             wrap=tk.WORD,
             font=('Arial', 14),
             bg='#ECF0F1',
@@ -267,11 +277,31 @@ class TranscriptionGUI:
             pady=20,
             relief='flat'
         )
-        self.transcription_text.pack(fill='both', expand=True)
+        self.transcription_text.grid(row=0, column=0, sticky='nsew', padx=20, pady=(20, 10))
 
-        # Buttons
-        button_frame = tk.Frame(self.root, bg='#2C3E50')
-        button_frame.pack(fill='x', padx=20, pady=10)
+        # Footer (moved former header/status content here)
+        footer = tk.Frame(content_wrapper, bg='#2C3E50')
+        footer.grid(row=1, column=0, sticky='ew', padx=20, pady=(0, 20))
+        footer.columnconfigure(0, weight=1)
+        footer.columnconfigure(1, weight=0)
+
+        # Status label (was in header/status frame)
+        status_holder = tk.Frame(footer, bg='#2ECC71', height=40)
+        status_holder.grid(row=0, column=0, sticky='ew', padx=(0, 10))
+        status_holder.grid_propagate(False)
+
+        self.status_label = tk.Label(
+            status_holder,
+            text="FIXED - Interim text is properly deleted | Clients: 0",
+            font=('Arial', 12, 'bold'),
+            bg='#2ECC71',
+            fg='white'
+        )
+        self.status_label.pack(fill='x', pady=8, padx=10)
+
+        # Buttons (kept in footer, right-aligned)
+        button_frame = tk.Frame(footer, bg='#2C3E50')
+        button_frame.grid(row=0, column=1, sticky='e')
 
         clear_btn = tk.Button(
             button_frame,
@@ -309,10 +339,10 @@ class TranscriptionGUI:
 
     def update_status(self, message: str, client_count: int = 0):
         self.client_count = client_count
-        self.status_label.config(text=f"FIXED - {message} | Clients: {client_count}")
+        self.status_label.config(text=f"{message} | Clients: {client_count}")
 
     def handle_transcript_update(self, client_id: str, text: str, is_final: bool = False):
-        """TRULY FIXED - properly deletes interim text"""
+        """properly deletes interim text"""
 
         result = self.transcript_processor.process_transcript(client_id, text, is_final)
 
